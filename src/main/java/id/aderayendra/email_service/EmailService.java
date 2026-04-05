@@ -1,12 +1,13 @@
 package id.aderayendra.email_service;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.json.JsonParser;
+import org.springframework.boot.json.JsonParserFactory;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Map;
 
 @Service
 public class EmailService {
@@ -18,39 +19,38 @@ public class EmailService {
     }
 
     @RabbitListener(queues = "order-queue")
+    @SuppressWarnings("unchecked")
     public void receiveMessage(String message) {
         System.out.println("Message received: " + message);
         try {
-            String orderId = extractValue(message, "\"order\"\\s*:\\s*\\{[^}]*\"id\"\\s*:\\s*(\\d+)");
-            String productName = extractValue(message, "\"product\"\\s*:\\s*\\{[^}]*\"nama\"\\s*:\\s*\"([^\"]+)\"");
-            String quantity = extractValue(message, "\"order\"\\s*:\\s*\\{[^}]*\"jumlah\"\\s*:\\s*(\\d+)");
-            String total = extractValue(message, "\"order\"\\s*:\\s*\\{[^}]*\"total\"\\s*:\\s*([\\d.]+)");
-            String status = extractValue(message, "\"status\"\\s*:\\s*\"([^\"]+)\"");
+            JsonParser parser = JsonParserFactory.getJsonParser();
+            Map<String, Object> map = parser.parseMap(message);
+
+            Map<String, Object> orderMap = (Map<String, Object>) map.get("order");
+            Map<String, Object> productMap = (Map<String, Object>) map.get("product");
+
+            String orderId = String.valueOf(orderMap.get("id"));
+            String productName = String.valueOf(productMap.get("nama"));
+            String quantity = String.valueOf(orderMap.get("jumlah"));
+            String total = String.valueOf(orderMap.get("total"));
+            String status = String.valueOf(map.get("status"));
 
             String subject = "Order Confirmation - Order #" + orderId;
             String body = String.format(
                     "Your order with ID %s has been %s.\n\n" +
-                    "Details:\n" +
-                    "- Product: %s\n" +
-                    "- Quantity: %s\n" +
-                    "- Total: Rp %s\n\n" +
-                    "Thank you for your order!",
+                            "Details:\n" +
+                            "- Product: %s\n" +
+                            "- Quantity: %s\n" +
+                            "- Total: Rp %s\n\n" +
+                            "Thank you for your order!",
                     orderId, status, productName, quantity, total
             );
 
             sendEmail("ervan@pnp.ac.id", subject, body);
+            System.out.println("Email sent successfully!");
         } catch (Exception e) {
             System.err.println("Failed to parse and send email: " + e.getMessage());
         }
-    }
-
-    private String extractValue(String json, String regex) {
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(json);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return "Unknown";
     }
 
     private void sendEmail(String to, String subject, String body) {

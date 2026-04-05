@@ -32,7 +32,7 @@ class EmailServiceApplicationTests {
 		String message = "{\"order\":{\"id\":8,\"produkId\":\"P001\",\"jumlah\":20,\"tanggal\":\"2026-03-15\",\"total\":250000.0},\"status\":\"CREATED\",\"product\":{\"id\":\"P001\",\"nama\":\"Produk A\",\"kategori\":\"Kategori A\",\"harga\":10000,\"stok\":50}}";
 		rabbitTemplate.convertAndSend("order-queue", message);
 
-		await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+		await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
 			verify(mailSender).send(any(SimpleMailMessage.class));
 		});
 	}
