@@ -34,6 +34,7 @@ public class EmailService {
             String quantity = String.valueOf(orderMap.get("jumlah"));
             String total = String.valueOf(orderMap.get("total"));
             String status = String.valueOf(map.get("status"));
+            String email = String.valueOf(map.get("email"));
 
             String subject = "Order Confirmation - Order #" + orderId;
             String body = String.format(
@@ -46,7 +47,7 @@ public class EmailService {
                     orderId, status, productName, quantity, total
             );
 
-            sendEmail("ervan@pnp.ac.id", subject, body);
+            sendEmail(email != null && !email.equals("null") ? email : "ervan@pnp.ac.id", subject, body);
             System.out.println("Email sent successfully!");
         } catch (Exception e) {
             System.err.println("Failed to parse and send email: " + e.getMessage());
